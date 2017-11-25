@@ -383,6 +383,8 @@ public class MyNetwork implements Runnable {
         c.setOverlapDutyCycle(c.getIterationsOverlap() * 1.0 / nbIterations);
     }
 
+    
+
     private List<MyColumn> neighbors(MyColumn c) {
         //TODO
         return lstMC;
