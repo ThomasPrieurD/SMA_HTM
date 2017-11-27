@@ -30,12 +30,25 @@ public class MyColumn extends AbstractNetworkNode {
     private int iterationsOverlap;
     private double boost;
 
+    private MyCell cellBefore;
+    private MyCell cell;
+
     
     public MyColumn(NodeInterface _node) {
         super(_node);
         activatedRate = 0.0;
         boost = 1.0;
         overlapDutyCycle = 0.0;
+        cell = new MyCell(_node);
+    }
+
+    public MyCell getCell() {
+        return cell;
+    }
+
+    public void setCell(MyCell cell) {
+        cellBefore = this.cell;
+        this.cell = cell;
     }
 
     public double getOverlapDutyCycle() {

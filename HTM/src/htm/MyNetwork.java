@@ -21,9 +21,9 @@ import java.util.logging.Logger;
  */
 public class MyNetwork implements Runnable {
 
-    private static final int DENSITE_INPUT_COLUMNS = 8;
-    private static final int DESIRED_LOCAL_ACTIVITY = 3;
-    private static final int MIN_OVERLAP = 3;
+    private static final int DENSITE_INPUT_COLUMNS = 4;
+    private static final int DESIRED_LOCAL_ACTIVITY = 2;
+    private static final int MIN_OVERLAP = 2;
     private static final int NB_ENTRIES = 16;
 
     private static final double LINEAR_COEF = 6.25; // 0.5/0.008 => boostMax / minDutyCycle
@@ -55,6 +55,7 @@ public class MyNetwork implements Runnable {
             ni.setAbstractNetworkNode(n);
             lstMN.add(n);
         }
+
         // création des colonnes
         lstMC = new ArrayList<MyColumn>();
         for (int i = 0; i < nbColumns; i++) {
@@ -62,14 +63,37 @@ public class MyNetwork implements Runnable {
             MyColumn c = new MyColumn(ni);
             c.getNode().setPosition(i*2, 2);
             ni.setAbstractNetworkNode(c);
-            
+
+            //ni.setAbstractNetworkNode(c.getCell());
+
             lstMC.add(c);
         }
+
+        // 1 Synapse entre chaque colonnes :
+        /*for (int i = 0; i < lstMC.size(); i++) {
+
+            MyNeuron n1 = lstMC.get(i).getCell();
+
+            for (int j = 0; j < lstMC.size(); j++) {
+
+                if(i != j) {
+                    MyColumn c2 = lstMC.get(j);
+
+                    if (!n1.getNode().isConnectedTo(c2.getNode())) {
+                        EdgeInterface e = eb.getNewEdge(n1.getNode(), c2.getNode());
+                        MySynapse s = new MySynapse(e);
+                        e.setAbstractNetworkEdge(s);
+                    } else {
+                        i--;
+                    }
+                }
+            }
+        }*/
         
         Random rnd = new Random();
         // Connection entre entrées et colonnes
         for (int i = 0; i < DENSITE_INPUT_COLUMNS * lstMC.size(); i++) {
-            
+
             MyNeuron n = lstMN.get(rnd.nextInt(lstMN.size()));
             MyColumn c = lstMC.get(rnd.nextInt(lstMC.size()));
             
@@ -90,9 +114,79 @@ public class MyNetwork implements Runnable {
     public void run() {
 
         nbIterations = 1;
-        int entree = 0; //nos entrées sont des nombres allant de 1 à 16
 
         GenerateRandomSystem();
+
+        spatialPooling();
+        //temporalPooling();
+    }
+
+    /*private void temporalPooling() {
+        int entree = 0; //nos entrées sont des nombres allant de 1 à 16
+
+        while (true) {
+
+            HashMap<MyColumn, Integer> overlap = new HashMap<>();
+            List<MyColumn> activeColumns = new ArrayList<>();
+            int minLocalActivity = 0;
+
+            encodeEntry(entree);
+
+            // Calcul de l'overlap
+            for (MyColumn c : lstMC) {
+
+                int tempOverlap =0;
+
+                for (EdgeInterface e : c.getNode().getEdgeIn()) {
+                    tempOverlap += ((MyNeuron)e.getNodeIn().getAbstractNetworkNode()).getActivation();
+                }
+
+                if (tempOverlap < MIN_OVERLAP){
+                    tempOverlap = 0;
+                } else {
+                    tempOverlap = ((Double) (tempOverlap * c.getBoost())).intValue();
+                }
+                overlap.put(c, tempOverlap);
+            }
+
+            // Inhibition
+            for (MyColumn c : lstMC) {
+
+                minLocalActivity = kthScore(c, overlap, DESIRED_LOCAL_ACTIVITY);
+
+                if(overlap.get(c) > 0 && overlap.get(c) >= minLocalActivity) {
+                    activeColumns.add(c);
+                    c.getNode().setState(NodeInterface.State.ACTIVATED);
+                } else {
+                    c.getNode().setState(NodeInterface.State.DESACTIVATED);
+                }
+            }
+
+            for (MyColumn c : activeColumns) {
+                boolean buPredicted = false;
+                if(predictiveState(c, t-1)) {
+                    s = getActiveSegment(c, t-1, activeState);
+                    if(s.getSequenceSegment()) {
+                        buPredicted = true;
+                        activeState(c, t);
+                    }
+                }
+
+                if(!buPredicted) {
+                    activeState(c, t);
+                }
+            }
+
+        }
+    }
+
+    private boolean predictiveState(MyColumn c, int t) {
+
+    }*/
+
+    private void spatialPooling() {
+
+        int entree = 0; //nos entrées sont des nombres allant de 1 à 16
 
         while (true) {
 
@@ -150,22 +244,23 @@ public class MyNetwork implements Runnable {
             }
 
             // Boosting
-            for(MyColumn c : lstMC) {
+            if(nbIterations > 30) {
+                for(MyColumn c : lstMC) {
 
-                // Column boost
-                double minDutyCycle = 0.1 * getMaxDutyCycle(neighbors(c));
-                updateActivatedRate(c, activeColumns.contains(c));
-                c.setBoost(getNewBoost(c.getActivatedRate(), minDutyCycle));
+                    // Column boost
+                    double minDutyCycle = 0.1 * getMaxDutyCycle(neighbors(c));
+                    updateActivatedRate(c, activeColumns.contains(c));
+                    c.setBoost(getNewBoost(c.getActivatedRate(), minDutyCycle));
 
-                //Synapse boost
-                updateOverlapDutyCycle(c, overlap.get(c) > MIN_OVERLAP);
-                if(c.getOverlapDutyCycle() < minDutyCycle) {
-                    increasePermanences(c, INCREMENTAL_COEF);
+                    //Synapse boost
+                    updateOverlapDutyCycle(c, overlap.get(c) > MIN_OVERLAP);
+                    if(c.getOverlapDutyCycle() < minDutyCycle) {
+                        increasePermanences(c, INCREMENTAL_COEF);
+                    }
+                    sleep();
                 }
-                sleep();
             }
 
-            double inhibitionRadius = averageReceptiveFieldSize();
 
             entree = (entree + 1) % 16;
             nbIterations++;
