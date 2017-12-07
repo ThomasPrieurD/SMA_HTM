@@ -22,7 +22,7 @@ import java.util.logging.Logger;
 public class MyNetwork implements Runnable {
 
     private static final int DENSITE_INPUT_COLUMNS = 4;
-    private static final int DESIRED_LOCAL_ACTIVITY = 2;
+    private static final int DESIRED_LOCAL_ACTIVITY = 1;
     private static final int MIN_OVERLAP = 2;
     private static final int NB_ENTRIES = 16;
 
@@ -68,27 +68,6 @@ public class MyNetwork implements Runnable {
 
             lstMC.add(c);
         }
-
-        // 1 Synapse entre chaque colonnes :
-        /*for (int i = 0; i < lstMC.size(); i++) {
-
-            MyNeuron n1 = lstMC.get(i).getCell();
-
-            for (int j = 0; j < lstMC.size(); j++) {
-
-                if(i != j) {
-                    MyColumn c2 = lstMC.get(j);
-
-                    if (!n1.getNode().isConnectedTo(c2.getNode())) {
-                        EdgeInterface e = eb.getNewEdge(n1.getNode(), c2.getNode());
-                        MySynapse s = new MySynapse(e);
-                        e.setAbstractNetworkEdge(s);
-                    } else {
-                        i--;
-                    }
-                }
-            }
-        }*/
         
         Random rnd = new Random();
         // Connection entre entrées et colonnes
@@ -118,71 +97,10 @@ public class MyNetwork implements Runnable {
         GenerateRandomSystem();
 
         spatialPooling();
-        //temporalPooling();
+
     }
 
-    /*private void temporalPooling() {
-        int entree = 0; //nos entrées sont des nombres allant de 1 à 16
 
-        while (true) {
-
-            HashMap<MyColumn, Integer> overlap = new HashMap<>();
-            List<MyColumn> activeColumns = new ArrayList<>();
-            int minLocalActivity = 0;
-
-            encodeEntry(entree);
-
-            // Calcul de l'overlap
-            for (MyColumn c : lstMC) {
-
-                int tempOverlap =0;
-
-                for (EdgeInterface e : c.getNode().getEdgeIn()) {
-                    tempOverlap += ((MyNeuron)e.getNodeIn().getAbstractNetworkNode()).getActivation();
-                }
-
-                if (tempOverlap < MIN_OVERLAP){
-                    tempOverlap = 0;
-                } else {
-                    tempOverlap = ((Double) (tempOverlap * c.getBoost())).intValue();
-                }
-                overlap.put(c, tempOverlap);
-            }
-
-            // Inhibition
-            for (MyColumn c : lstMC) {
-
-                minLocalActivity = kthScore(c, overlap, DESIRED_LOCAL_ACTIVITY);
-
-                if(overlap.get(c) > 0 && overlap.get(c) >= minLocalActivity) {
-                    activeColumns.add(c);
-                    c.getNode().setState(NodeInterface.State.ACTIVATED);
-                } else {
-                    c.getNode().setState(NodeInterface.State.DESACTIVATED);
-                }
-            }
-
-            for (MyColumn c : activeColumns) {
-                boolean buPredicted = false;
-                if(predictiveState(c, t-1)) {
-                    s = getActiveSegment(c, t-1, activeState);
-                    if(s.getSequenceSegment()) {
-                        buPredicted = true;
-                        activeState(c, t);
-                    }
-                }
-
-                if(!buPredicted) {
-                    activeState(c, t);
-                }
-            }
-
-        }
-    }
-
-    private boolean predictiveState(MyColumn c, int t) {
-
-    }*/
 
     private void spatialPooling() {
 
